@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment]
+    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts]
 
     #Creating a new User
     def create
@@ -9,8 +9,9 @@ class UsersController < ApplicationController
           name: user_params[:name],
           email: user_params[:email],
           password: user_params[:password],
-          author: author # Associate the user with the author
-          interests: user_params[:interests]
+          author: author,
+          interests: user_params[:interests],
+          specializations: user_params[:specializations]
         )
 
         if @user.save
@@ -159,9 +160,81 @@ class UsersController < ApplicationController
 
     end
 
-    # def recommended_posts
+    def recommended_posts
+      interests_array = current_user.interests.split(',')
+      recommended_post = Article.where(genre: interests_array)
 
-    # end
+      response = recommended_post.map do |article|
+        {
+          id: article.id,
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments,
+          views: article.views
+        }
+      end
+      render json: response
+    end
+
+    def allTopics
+      unique_genres = Article.distinct.pluck(:genre)
+      render json: unique_genres
+    end
+
+    def similar_author_posts
+      specializations_array = current_user.specializations.split(',')
+      request_users = []
+
+      request_users - User.select do |user|
+        if user.specializations.nil?
+          false
+        else
+          user_specializations_array = user.specializations.split(',')
+          !(specializations_array & user_specializations_array).empty?
+        end
+      end
+
+
+
+      articles = []
+
+      request_users.each do |user|
+        author = user.author
+        article_ids = author&.article_ids || []
+
+        article_ids.each do |article_id|
+          article = Article.find_by(id: article_id)
+          articles.push(article)
+        end
+      end
+
+      response = articles.map do |article|
+        {
+          id: article.id,
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments,
+          views: article.views
+        }
+      end
+      render json: response
+    end
 
     private
 
@@ -170,7 +243,7 @@ class UsersController < ApplicationController
     # end
 
     def user_params
-      params.permit(:name, :email, :password, :password_confirmation, :interests)
+      params.permit(:name, :email, :password, :password_confirmation, :interests, :specializations)
     end
 
   end

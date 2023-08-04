@@ -47,4 +47,8 @@ Rails.application.routes.draw do
   put "/add_comment", to: "users#add_comment"
 
   get '/recommended_posts', to: "users#recommended_posts"
+
+  get '/allTopics', to: "users#allTopics"
+
+  get '/similar_author_posts', to: "users#similar_author_posts"
 end

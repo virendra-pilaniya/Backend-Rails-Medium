@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_04_175418) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_04_185651) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -76,6 +76,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_04_175418) do
     t.json "following", default: []
     t.text "following_ids"
     t.string "interests"
+    t.string "specializations"
   end
 
   add_foreign_key "users", "authors"
