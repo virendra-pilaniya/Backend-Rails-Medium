@@ -2,6 +2,9 @@ Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Defines the root path route ("/")
+
+  #articles routes
+
   root "articles#home"
 
   post "articles/create", to: "articles#create"
@@ -20,8 +23,7 @@ Rails.application.routes.draw do
 
   put "articles/show", to: "articles#show"
 
-
-  ###user 
+  #Users routes
 
   resources :users, only: [:create]
 
@@ -33,5 +35,8 @@ Rails.application.routes.draw do
 
   # My Posts
   get '/my_posts', to: 'users#my_posts'
-  
+
+  put '/follow_user', to: 'users#follow_user'
+
+  get '/show_author', to: 'users#show_author'
 end
