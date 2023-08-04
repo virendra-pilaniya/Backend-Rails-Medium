@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_04_124000) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_04_175418) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -63,6 +63,9 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_04_124000) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "interests_column_in_users", force: :cascade do |t|
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "name"
     t.string "email"
@@ -72,6 +75,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_04_124000) do
     t.integer "author_id"
     t.json "following", default: []
     t.text "following_ids"
+    t.string "interests"
   end
 
   add_foreign_key "users", "authors"

@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user]
+    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment]
 
     #Creating a new User
     def create
@@ -10,6 +10,7 @@ class UsersController < ApplicationController
           email: user_params[:email],
           password: user_params[:password],
           author: author # Associate the user with the author
+          interests: user_params[:interests]
         )
 
         if @user.save
@@ -78,7 +79,89 @@ class UsersController < ApplicationController
       render json: current_user.followed_ids
     end
 
+    def add_like
+      if current_user.id != params[:user_id].to_i
+        render json: {error: 'Please login to like this article.'}, status: :not_found
+        return
+      end
 
+      article = Article.find_by(id: params[:article_id])
+
+      if article.likes.include?(params[:user_id])
+        render json: {error: 'You have already liked this article'}
+        return
+      end
+
+      if article
+        article.increment!(:no_of_likes)
+        article.likes.push(params[:user_id])
+        article.save
+
+        response = {
+          id: article.id,
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments,
+          views: article.views
+        }
+
+        render json: response, status: :ok
+
+      else
+        render json: { error: 'Article not found' }, status: :not_found
+      end
+
+    end
+
+    def add_comment
+      if current_user.id != params[:user_id].to_i
+        render json: {error: 'Please login to comment on this article.'}, status: :not_found
+        return
+      end
+
+      article = Article.find_by(id: params[:article_id])
+
+
+      if article
+        article.increment!(:no_of_comments)
+        article.comments.push({user_id: params[:user_id], comment_text: params[:comment_text]})
+        article.save
+
+        response = {
+          id: article.id,
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments,
+          views: article.views
+        }
+
+        render json: response, status: :ok
+
+      else
+        render json: { error: 'Article not found' }, status: :not_found
+      end
+
+    end
+
+    # def recommended_posts
+
+    # end
 
     private
 
@@ -87,7 +170,7 @@ class UsersController < ApplicationController
     # end
 
     def user_params
-      params.permit(:name, :email, :password, :password_confirmation)
+      params.permit(:name, :email, :password, :password_confirmation, :interests)
     end
 
   end

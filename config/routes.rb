@@ -23,6 +23,8 @@ Rails.application.routes.draw do
 
   put "articles/show", to: "articles#show"
 
+  get "articles/top_posts", to: "articles#top_posts"
+
   #Users routes
 
   resources :users, only: [:create]
@@ -39,4 +41,10 @@ Rails.application.routes.draw do
   put '/follow_user', to: 'users#follow_user'
 
   get '/show_author', to: 'users#show_author'
+
+  put "/add_like", to: "users#add_like"
+
+  put "/add_comment", to: "users#add_comment"
+
+  get '/recommended_posts', to: "users#recommended_posts"
 end
