@@ -53,4 +53,14 @@ Rails.application.routes.draw do
   put '/subscribe', to: "users#subscribe"
 
   put "/show", to: "users#show"
+
+  #Drafts
+
+  post "/create_draft" , to: "users#create_draft"
+
+  put "/update_draft" , to: "users#update_draft"
+
+  get "/my_drafts" , to: "users#my_drafts"
+
+  delete "/delete_draft" , to: "users#delete_draft"
 end

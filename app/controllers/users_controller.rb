@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show]
+    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
 
     #Creating a new User
     def create
@@ -204,8 +204,6 @@ class UsersController < ApplicationController
         end
       end
 
-
-
       articles = []
 
       request_users.each do |user|
@@ -327,6 +325,139 @@ class UsersController < ApplicationController
       end
     end
 
+    def create_draft
+      permitted_params = article_param # Mark the article as a draft
+
+      author = Author.find_or_create_by(name: permitted_params[:author])
+
+      article = Article.new(
+            title: permitted_params[:title],
+            description: permitted_params[:description],
+            genre: permitted_params[:genre],
+            author: author,
+            no_of_likes: 0,
+            no_of_comments: 0,
+            likes: [],
+            comments: [],
+            is_draft: true
+      )
+
+      article.image.attach(permitted_params[:image]) if permitted_params[:image].present?
+
+        if article.save
+            # Update the article_ids of the associated author with the new article's ID
+            author.update(article_ids: author.article_ids << article.id)
+
+            # Build a JSON response with the image URL for the created article
+            response = {
+            id: article.id,
+            title: article.title,
+            author: article.author,
+            description: article.description,
+            genre: article.genre,
+            image_url: article.image.attached? ? url_for(article.image) : nil,
+            created_at: article.created_at,
+            updated_at: article.updated_at,
+            no_of_likes: article.no_of_likes,
+            no_of_comments: article.no_of_comments,
+            likes: article.likes,
+            comments: article.comments,
+            is_draft: article.is_draft
+            }
+
+            render json: response, status: :created
+        else
+            render json: { error: 'Failed to create the Draft' }, status: :unprocessable_entity
+        end
+    end
+
+    def update_draft
+      article = Article.find_by(id: params[:id])
+
+      unless article
+        render json: { error: 'Draft article not found' }, status: :not_found
+        return
+      end
+
+      # Ensure the article belongs to the current user and is a draft
+      if article.author_id != current_user.author_id || !article.is_draft
+        render json: { error: 'You do not have permission to update this draft' }, status: :unauthorized
+        return
+      end
+
+      permitted_params = article_param.except(:author)
+
+        # Update the article with the permitted parameters
+        if article.update(permitted_params)
+            # Build a JSON response with the updated article details
+            response = {
+            id: article.id,
+            title: article.title,
+            author: article.author.name,
+            description: article.description,
+            genre: article.genre,
+            image_url: article.image.attached? ? url_for(article.image) : nil,
+            created_at: article.created_at,
+            updated_at: article.updated_at,
+            no_of_likes: article.no_of_likes,
+            no_of_comments: article.no_of_comments,
+            likes: article.likes,
+            comments: article.comments
+            }
+
+            render json: response
+        else
+            render json: { error: 'Failed to update the Draft' }, status: :unprocessable_entity
+        end
+    end
+
+    def delete_draft
+      article = Article.find_by(id: params[:id])
+
+      if article
+        # Get the associated author of the article
+        author = article.author
+
+        # Destroy the associated image along with the article
+        article.image.purge if article.image.attached?
+
+        # Destroy the article
+        article.destroy
+
+        # Remove the article's ID from the author's article_ids array
+        author.update(article_ids: author.article_ids - [params[:id].to_i])
+
+        render json: { message: 'Draft deleted successfully!' }, status: :ok
+      else
+        render json: { error: 'Draft not found' }, status: :not_found
+      end
+  end
+
+    def my_drafts
+      # Retrieve all draft articles of the current user
+      articles = Article.where(author_id: current_user.author_id, is_draft: true)
+
+      response = articles.map do |article|
+        # Generate a response object for each draft article
+        {
+          id: article.id,
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments
+        }
+      end
+
+      render json: response
+    end
+
 
     private
 
@@ -336,6 +467,10 @@ class UsersController < ApplicationController
 
     def user_params
       params.permit(:name, :email, :password, :password_confirmation, :interests, :specializations)
+    end
+
+    def article_param
+      params.permit(:title, :author, :description, :genre, :image)
     end
 
   end

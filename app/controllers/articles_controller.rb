@@ -43,7 +43,8 @@ class ArticlesController < ApplicationController
               no_of_likes: article.no_of_likes,
               no_of_comments: article.no_of_comments,
               likes: article.likes,
-              comments: article.comments
+              comments: article.comments,
+              reading_time: article.reading_t
             }
         end
         render json: response
@@ -187,6 +188,10 @@ class ArticlesController < ApplicationController
         # Find or create the author based on the author name
         author = Author.find_or_create_by(name: permitted_params[:author])
 
+        words_per_minute = 225
+        word_count = permitted_params[:description].split.size
+        reading_time = (word_count.to_f / words_per_minute).ceil
+
         # Create the article and associate it with the author
         article = Article.new(
             title: permitted_params[:title],
@@ -196,7 +201,9 @@ class ArticlesController < ApplicationController
             no_of_likes: 0,
             no_of_comments: 0,
             likes: [],
-            comments: []
+            comments: [],
+            reading_t: reading_time,
+            is_draft: false
         )
 
         # Attach the 'image' file to the article if present
@@ -219,7 +226,8 @@ class ArticlesController < ApplicationController
             no_of_likes: article.no_of_likes,
             no_of_comments: article.no_of_comments,
             likes: article.likes,
-            comments: article.comments
+            comments: article.comments,
+            is_draft: article.is_draft
             }
 
             render json: response, status: :created
@@ -307,86 +315,6 @@ class ArticlesController < ApplicationController
       render json: response
     end
 
-    # def show
-    #   if !current_user
-    #     response json: {error: 'Please login to see the article'}
-    #     return
-    #   end
-
-    #   article = Article.find_by(id: params[:id])
-
-    #   if article
-
-    #     if different_days?(current_user.last_seen, Time.now)
-    #       current_user.update(remaining_posts: current_user.subscription_plan.to_i)
-
-    #     if current_user.expires_at < Time.now
-    #       current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: Time.now + 1.month)
-    #     end
-
-    #     if current_user.remaining_posts == 0
-    #       response json: {error: 'daily limit reached!'}
-    #       return
-    #     end
-
-    #     current_user.decrement!(:remaining_posts)
-    #     article.increment!(:views)
-    #     current_user.update(last_seen: Time.now)
-
-    #     response = {
-    #       id: article.id,
-    #       title: article.title,
-    #       author: article.author,
-    #       description: article.description,
-    #       genre: article.genre,
-    #       image_url: article.image.attached? ? url_for(article.image) : nil,
-    #       created_at: article.created_at,
-    #       updated_at: article.updated_at,
-    #       no_of_likes: article.no_of_likes,
-    #       no_of_comments: article.no_of_comments,
-    #       likes: article.likes,
-    #       comments: article.comments,
-    #       views: article.views,
-    #       remaining_posts: current_user&.remaining_posts || 1,
-    #       subscription_plan: current_user&.subscription_plan || 'free'
-    #     }
-
-    #     render json: response, status: :ok
-    #   else
-    #     render json: { error: 'Article not found' }, status: :not_found
-    #   end
-    # end
-
-
-    # def show
-    #   article = Article.find_by(id: params[:id])
-
-    #   if article
-    #     # Update the "views" count by 1
-    #     article.increment!(:views)
-
-    #     response = {
-    #       id: article.id,
-    #       title: article.title,
-    #       author: article.author,
-    #       description: article.description,
-    #       genre: article.genre,
-    #       image_url: article.image.attached? ? url_for(article.image) : nil,
-    #       created_at: article.created_at,
-    #       updated_at: article.updated_at,
-    #       no_of_likes: article.no_of_likes,
-    #       no_of_comments: article.no_of_comments,
-    #       likes: article.likes,
-    #       comments: article.comments,
-    #       views: article.views
-    #     }
-
-    #     render json: response, status: :ok
-    #   else
-    #     render json: { error: 'Article not found' }, status: :not_found
-    #   end
-
-    # end
 
     def top_posts
       all_articles = Article.all
