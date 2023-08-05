@@ -21,8 +21,6 @@ Rails.application.routes.draw do
 
   get "articles/all", to: "articles#all"
 
-  put "articles/show", to: "articles#show"
-
   get "articles/top_posts", to: "articles#top_posts"
 
   #Users routes
@@ -51,4 +49,8 @@ Rails.application.routes.draw do
   get '/allTopics', to: "users#allTopics"
 
   get '/similar_author_posts', to: "users#similar_author_posts"
+
+  put '/subscribe', to: "users#subscribe"
+
+  put "/show", to: "users#show"
 end

@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  user_id: 1
+  plan: 1
+  expires_at: 2023-08-05 03:27:39
+
+two:
+  user_id: 1
+  plan: 1
+  expires_at: 2023-08-05 03:27:39

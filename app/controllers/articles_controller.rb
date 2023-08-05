@@ -307,37 +307,86 @@ class ArticlesController < ApplicationController
       render json: response
     end
 
+    # def show
+    #   if !current_user
+    #     response json: {error: 'Please login to see the article'}
+    #     return
+    #   end
+
+    #   article = Article.find_by(id: params[:id])
+
+    #   if article
+
+    #     if different_days?(current_user.last_seen, Time.now)
+    #       current_user.update(remaining_posts: current_user.subscription_plan.to_i)
+
+    #     if current_user.expires_at < Time.now
+    #       current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: Time.now + 1.month)
+    #     end
+
+    #     if current_user.remaining_posts == 0
+    #       response json: {error: 'daily limit reached!'}
+    #       return
+    #     end
+
+    #     current_user.decrement!(:remaining_posts)
+    #     article.increment!(:views)
+    #     current_user.update(last_seen: Time.now)
+
+    #     response = {
+    #       id: article.id,
+    #       title: article.title,
+    #       author: article.author,
+    #       description: article.description,
+    #       genre: article.genre,
+    #       image_url: article.image.attached? ? url_for(article.image) : nil,
+    #       created_at: article.created_at,
+    #       updated_at: article.updated_at,
+    #       no_of_likes: article.no_of_likes,
+    #       no_of_comments: article.no_of_comments,
+    #       likes: article.likes,
+    #       comments: article.comments,
+    #       views: article.views,
+    #       remaining_posts: current_user&.remaining_posts || 1,
+    #       subscription_plan: current_user&.subscription_plan || 'free'
+    #     }
+
+    #     render json: response, status: :ok
+    #   else
+    #     render json: { error: 'Article not found' }, status: :not_found
+    #   end
+    # end
 
 
-    def show
-      article = Article.find_by(id: params[:id])
+    # def show
+    #   article = Article.find_by(id: params[:id])
 
-      if article
-        # Update the "views" count by 1
-        article.increment!(:views)
+    #   if article
+    #     # Update the "views" count by 1
+    #     article.increment!(:views)
 
-        response = {
-          id: article.id,
-          title: article.title,
-          author: article.author,
-          description: article.description,
-          genre: article.genre,
-          image_url: article.image.attached? ? url_for(article.image) : nil,
-          created_at: article.created_at,
-          updated_at: article.updated_at,
-          no_of_likes: article.no_of_likes,
-          no_of_comments: article.no_of_comments,
-          likes: article.likes,
-          comments: article.comments,
-          views: article.views
-        }
+    #     response = {
+    #       id: article.id,
+    #       title: article.title,
+    #       author: article.author,
+    #       description: article.description,
+    #       genre: article.genre,
+    #       image_url: article.image.attached? ? url_for(article.image) : nil,
+    #       created_at: article.created_at,
+    #       updated_at: article.updated_at,
+    #       no_of_likes: article.no_of_likes,
+    #       no_of_comments: article.no_of_comments,
+    #       likes: article.likes,
+    #       comments: article.comments,
+    #       views: article.views
+    #     }
 
-        render json: response, status: :ok
-      else
-        render json: { error: 'Article not found' }, status: :not_found
-      end
+    #     render json: response, status: :ok
+    #   else
+    #     render json: { error: 'Article not found' }, status: :not_found
+    #   end
 
-    end
+    # end
 
     def top_posts
       all_articles = Article.all
