@@ -44,7 +44,8 @@ class ArticlesController < ApplicationController
               no_of_comments: article.no_of_comments,
               likes: article.likes,
               comments: article.comments,
-              reading_time: article.reading_t
+              reading_time: article.reading_t,
+              revision_history: article.revision_history
             }
         end
         render json: response
@@ -203,7 +204,8 @@ class ArticlesController < ApplicationController
             likes: [],
             comments: [],
             reading_t: reading_time,
-            is_draft: false
+            is_draft: false,
+            revision_history: "Initial version created at #{Time.now}\n"
         )
 
         # Attach the 'image' file to the article if present
@@ -227,7 +229,8 @@ class ArticlesController < ApplicationController
             no_of_comments: article.no_of_comments,
             likes: article.likes,
             comments: article.comments,
-            is_draft: article.is_draft
+            is_draft: article.is_draft,
+            revision_history: article.revision_history
             }
 
             render json: response, status: :created
@@ -250,6 +253,8 @@ class ArticlesController < ApplicationController
         # Update the article with the permitted parameters
         if article.update(permitted_params)
             # Build a JSON response with the updated article details
+            update_revision_history(article, "Article Updated at #{Time.now}\n")
+
             response = {
             id: article.id,
             title: article.title,
@@ -262,7 +267,8 @@ class ArticlesController < ApplicationController
             no_of_likes: article.no_of_likes,
             no_of_comments: article.no_of_comments,
             likes: article.likes,
-            comments: article.comments
+            comments: article.comments,
+            revision_history: article.revision_history
             }
 
             render json: response
@@ -341,6 +347,10 @@ class ArticlesController < ApplicationController
           }
       end
       render json: response
+    end
+
+    def update_revision_history(article, revision_text)
+      article.update(revision_history: "#{article.revision_history}#{revision_text}")
     end
 
     private

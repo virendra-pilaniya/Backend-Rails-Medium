@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_08_05_043613) do
+ActiveRecord::Schema[7.0].define(version: 2023_08_05_055339) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -55,6 +55,7 @@ ActiveRecord::Schema[7.0].define(version: 2023_08_05_043613) do
     t.integer "reading_time"
     t.integer "reading_t"
     t.boolean "is_draft"
+    t.text "revision_history"
     t.index ["author_id"], name: "index_articles_on_author_id"
   end
 

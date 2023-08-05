@@ -347,7 +347,7 @@ class UsersController < ApplicationController
         if article.save
             # Update the article_ids of the associated author with the new article's ID
             author.update(article_ids: author.article_ids << article.id)
-
+            update_revision_history(article, "Draft created at #{Time.now}\n")
             # Build a JSON response with the image URL for the created article
             response = {
             id: article.id,
@@ -389,6 +389,8 @@ class UsersController < ApplicationController
 
         # Update the article with the permitted parameters
         if article.update(permitted_params)
+
+            update_revision_history(article, "Draft updated at #{Time.now}\n")
             # Build a JSON response with the updated article details
             response = {
             id: article.id,
@@ -458,6 +460,9 @@ class UsersController < ApplicationController
       render json: response
     end
 
+    def update_revision_history(article, revision_text)
+      article.update(revision_history: "#{article.revision_history}#{revision_text}")
+    end
 
     private
 
