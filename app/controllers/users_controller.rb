@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
+    before_action :authenticate_user, only: [:save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
 
     #Creating a new User
     def create
@@ -462,6 +462,44 @@ class UsersController < ApplicationController
 
     def update_revision_history(article, revision_text)
       article.update(revision_history: "#{article.revision_history}#{revision_text}")
+    end
+
+    def saved_articles
+      user = current_user
+
+      saved_articles = user.saved_articles.includes(article: :author)
+
+      response = saved_articles.map do |saved_article|
+        article = saved_article.article
+
+        {
+          id: article.id,
+          title: article.title,
+          author: article.author.name,
+          description: article.description,
+          genre: article.genre,
+          image_url: article.image.attached? ? url_for(article.image) : nil,
+          created_at: article.created_at,
+          updated_at: article.updated_at,
+          no_of_likes: article.no_of_likes,
+          no_of_comments: article.no_of_comments,
+          likes: article.likes,
+          comments: article.comments
+        }
+      end
+
+      render json: response
+    end
+
+    def save_article_for_later
+      user = current_user # Assuming you have a method to retrieve the current logged-in user
+      article = Article.find(params[:article_id])
+
+      # Create a new record in the saved_articles table
+      saved_article = SavedArticle.new(user: user, article: article)
+      saved_article.save
+
+      render json: { message: 'Article saved for later' }
     end
 
     private

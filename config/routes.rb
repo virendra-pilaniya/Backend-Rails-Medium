@@ -63,4 +63,9 @@ Rails.application.routes.draw do
   get "/my_drafts" , to: "users#my_drafts"
 
   delete "/delete_draft" , to: "users#delete_draft"
+
+  #saved articles
+  get '/saved_articles', to: 'users#saved_articles'
+
+  post '/save_article_for_later', to: 'users#save_article_for_later'
 end

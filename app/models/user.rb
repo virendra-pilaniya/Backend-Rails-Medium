@@ -8,6 +8,8 @@ class User < ApplicationRecord
 
     # Add associations as needed for your application
     belongs_to :author
+    has_many :saved_articles
+    has_many :saved_articles, through: :saved_articles, source: :article
 
     # serialize :following, Array
 
