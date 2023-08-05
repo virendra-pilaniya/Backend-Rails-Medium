@@ -68,4 +68,11 @@ Rails.application.routes.draw do
   get '/saved_articles', to: 'users#saved_articles'
 
   post '/save_article_for_later', to: 'users#save_article_for_later'
+
+  post '/create_article_in_list', to: 'users#create_article_in_list'
+
+  get '/view_list', to: 'users#view_list'
+
+  get '/share_list', to: 'users#share_list'
+
 end

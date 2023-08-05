@@ -1,10 +1,10 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
+    before_action :authenticate_user, only: [:create_article_in_list, :view_list, :save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
 
     #Creating a new User
     def create
-        author = Author.find_or_create_by(name: user_params[:name]) # Create a new author based on the user's name
+        author = Author.find_or_create_by(name: user_params[:name]) # if author is present good, otherwise Create a new author based on the user's name
         @user = User.new(
           name: user_params[:name],
           email: user_params[:email],
@@ -13,7 +13,8 @@ class UsersController < ApplicationController
           interests: user_params[:interests],
           specializations: user_params[:specializations],
           expires_at: Time.now,
-          last_seen: Time.now
+          last_seen: Time.now,
+          list: []
         )
 
         if @user.save
@@ -242,16 +243,11 @@ class UsersController < ApplicationController
       when 'free'
         current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: Time.now + 1.month)
       when '3_posts'
-        # Implement payment logic using Razorpay API to charge $3
-        # Set the subscription_plan to '3_posts' and remaining_posts to 3
+
         current_user.update(subscription_plan: '3_posts', remaining_posts: 3, expires_at: Time.now + 1.month)
       when '5_posts'
-        # Implement payment logic using Razorpay API to charge $5
-        # Set the subscription_plan to '5_posts' and remaining_posts to 5
         current_user.update(subscription_plan: '5_posts', remaining_posts: 5, expires_at: Time.now + 1.month)
       when '10_posts'
-        # Implement payment logic using Razorpay API to charge $10
-        # Set the subscription_plan to '10_posts' and remaining_posts to 10
         current_user.update(subscription_plan: '10_posts', remaining_posts: 10, expires_at: Time.now + 1.month)
       else
         render json: { error: 'Invalid subscription plan' }, status: :unprocessable_entity
@@ -492,14 +488,43 @@ class UsersController < ApplicationController
     end
 
     def save_article_for_later
-      user = current_user # Assuming you have a method to retrieve the current logged-in user
+      user = current_user
       article = Article.find(params[:article_id])
 
-      # Create a new record in the saved_articles table
       saved_article = SavedArticle.new(user: user, article: article)
       saved_article.save
 
       render json: { message: 'Article saved for later' }
+    end
+
+    def view_list
+      user = current_user
+      render json: { list: user.list || [] }
+    end
+
+    def create_article_in_list
+      user = current_user
+
+      article = Article.find(params[:article_id])
+
+      user.list ||= []
+      user.list << { id: article.id, title: article.title }
+
+      if user.save
+        render json: { message: 'Article added to the list' }
+      else
+        render json: { error: 'Failed to add the article to the list' }, status: :unprocessable_entity
+      end
+    end
+
+    def share_list
+      user = User.find_by(id: params[:user_id])
+
+      if user
+        render json: { list: user.list }, status: :ok
+      else
+        render json: { error: 'User not found' }, status: :not_found
+      end
     end
 
     private
