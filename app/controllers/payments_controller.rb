@@ -1,5 +1,5 @@
 class PaymentsController < ApplicationController
-  before_action :authenticate_user, only: [:subscribe, :payment_callback, :payments_page]
+  before_action :authenticate_user, only: [:subscribe, :payment_callback]
 
   require "razorpay"
 
@@ -47,10 +47,18 @@ class PaymentsController < ApplicationController
     order_id = session[:razorpay_order_id]
     amount = params[:amount].to_i
 
-    payload = "#{order_id}|#{payment_id}"
+    # payload = "#{order_id}|#{payment_id}"
 
-    client = Razorpay::Client.new(secret_key: 's4ohOw8UuO35BAjheDlhvn9L')
-    verified = client.utility.verify_payment_signature(payload, razorpay_signature)
+    # client = Razorpay::Client.new(secret_key: 's4ohOw8UuO35BAjheDlhvn9L')
+    # verified = client.utility.verify_payment_signature(payload, razorpay_signature)
+
+    payment_response = {
+      razorpay_order_id: order_id,
+      razorpay_payment_id: payment_id,
+      razorpay_signature: razorpay_signature
+    }
+
+    verified = Razorpay::Utility.verify_payment_signature(payment_response)
 
     if verified && amount == params[:amount]
       subscription_plan = session[:subscription_plan]

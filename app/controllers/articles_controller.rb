@@ -9,7 +9,7 @@ class ArticlesController < ApplicationController
 
    author = Author.find_by(id: current_user.author_id)
 
-   # I am assuming it will take 225 words pr minute
+   # I am assuming a person can read 225 words pr minute
    words_per_minute = 225.0
    word_count = permitted_params[:description].split.size
    reading_time = (word_count.to_f / words_per_minute)
@@ -155,10 +155,10 @@ end
     def filter
       author_name = params.fetch(:author, "")
       title = params.fetch(:title, "")
-      min_likes = params.fetch(:min_likes, nil) # The minimum number of likes
-      max_likes = params.fetch(:max_likes, nil) # The maximum number of likes
-      min_comments = params.fetch(:min_comments, nil) # The minimum number of comments
-      max_comments = params.fetch(:max_comments, nil) # The maximum number of comments
+      min_likes = params.fetch(:min_likes, nil)
+      max_likes = params.fetch(:max_likes, nil)
+      min_comments = params.fetch(:min_comments, nil)
+      max_comments = params.fetch(:max_comments, nil)
 
       articles = Article.all
 
@@ -333,7 +333,8 @@ end
         render json: response
     end
 
-    #showing top posts, first on the basis of first likes and then comments.
+    #showing top posts, first on the basis of first likes and if likes got equal then comments.
+
     def top_posts
       all_articles = Article.all
 
@@ -363,6 +364,7 @@ end
       render json: response
     end
 
+    #updating revision history
     def update_revision_history(article, revision_text)
       article.update(revision_history: "#{article.revision_history}#{revision_text}")
     end
