@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-    before_action :authenticate_user, only: [:create_article_in_list, :view_list, :save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
+    before_action :authenticate_user, only: [:update_user, :delete_user, :create_article_in_list, :view_list, :save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
 
     #Creating a new User
     def create
@@ -23,6 +23,36 @@ class UsersController < ApplicationController
         else
           render json: { error: @user.errors.full_messages }, status: :unprocessable_entity
         end
+    end
+
+    #updting the user
+    def update_user
+      user = current_user
+
+      if user.update(user_params)
+        user.articles.each do |article|
+          article.update_author_name(user.name)
+        end
+
+        render json: user, status: :ok
+      else
+        render json: { error: user.errors.full_messages }, status: :unprocessable_entity
+      end
+    end
+
+    #deleting the user
+    def delete_user
+      user = current_user
+
+      if user.destroy
+        user.articles.each do |article|
+          article.destroy
+        end
+
+        render json: { message: 'User deleted successfully' }, status: :ok
+      else
+        render json: { error: 'Failed to delete user' }, status: :unprocessable_entity
+      end
     end
 
     def show_author
@@ -60,7 +90,9 @@ class UsersController < ApplicationController
           no_of_comments: article.no_of_comments,
           likes: article.likes,
           comments: article.comments,
-          views: article.views
+          views: article.views,
+          reading_time: article.reading_t,
+          revision_history: article.revision_history
         }
     end
       render json: response, status: :ok
@@ -73,6 +105,7 @@ class UsersController < ApplicationController
     #   render json: current_user.following
     # end
 
+    #Follow user
     def follow_user
       target_user = User.find_by(id: params[:id])
       if current_user.follow_user(target_user.id)
@@ -83,6 +116,7 @@ class UsersController < ApplicationController
       render json: current_user.followed_ids
     end
 
+    #Adding likes by logged - in user
     def add_like
       if current_user.id != params[:user_id].to_i
         render json: {error: 'Please login to like this article.'}, status: :not_found
@@ -114,7 +148,9 @@ class UsersController < ApplicationController
           no_of_comments: article.no_of_comments,
           likes: article.likes,
           comments: article.comments,
-          views: article.views
+          views: article.views,
+          reading_time: article.reading_t,
+          revision_history: article.revision_history
         }
 
         render json: response, status: :ok
@@ -125,6 +161,7 @@ class UsersController < ApplicationController
 
     end
 
+    #Adding comments by logged - in user
     def add_comment
       if current_user.id != params[:user_id].to_i
         render json: {error: 'Please login to comment on this article.'}, status: :not_found
@@ -152,7 +189,9 @@ class UsersController < ApplicationController
           no_of_comments: article.no_of_comments,
           likes: article.likes,
           comments: article.comments,
-          views: article.views
+          views: article.views,
+          reading_time: article.reading_t,
+          revision_history: article.revision_history
         }
 
         render json: response, status: :ok
@@ -163,6 +202,7 @@ class UsersController < ApplicationController
 
     end
 
+    #Recommended Posts, it works on the priciple of matching articles's genre with user's interests
     def recommended_posts
       interests_array = current_user.interests.split(',')
       recommended_post = Article.where(genre: interests_array)
@@ -181,12 +221,15 @@ class UsersController < ApplicationController
           no_of_comments: article.no_of_comments,
           likes: article.likes,
           comments: article.comments,
-          views: article.views
+          views: article.views,
+          reading_time: article.reading_t,
+          revision_history: article.revision_history
         }
       end
       render json: response
     end
 
+    #Providing unique genres of all articles
     def allTopics
       unique_genres = Article.distinct.pluck(:genre)
       render json: unique_genres
@@ -231,7 +274,9 @@ class UsersController < ApplicationController
           no_of_comments: article.no_of_comments,
           likes: article.likes,
           comments: article.comments,
-          views: article.views
+          views: article.views,
+          reading_time: article.reading_t,
+          revision_history: article.revision_history
         }
       end
       render json: response
@@ -264,6 +309,7 @@ class UsersController < ApplicationController
       render json: { message: 'Remaining posts reset' }, status: :ok
     end
 
+    #show function for logged - in user to see any posts, if he has remaining any views in his subscription, then he can see the article, provided it's id.
     def show
       if !current_user
         render json: { message: 'Please login to see the article' }
@@ -281,7 +327,7 @@ class UsersController < ApplicationController
         end
 
         if current_user.expires_at < current_time
-          current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: current_time.now + 1.month)
+          current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: current_time + 1.month)
         end
 
         if current_user.remaining_posts == 0
@@ -321,6 +367,7 @@ class UsersController < ApplicationController
       end
     end
 
+    #creating a draft.
     def create_draft
       permitted_params = article_param # Mark the article as a draft
 
@@ -367,6 +414,7 @@ class UsersController < ApplicationController
         end
     end
 
+    #Updating draft.
     def update_draft
       article = Article.find_by(id: params[:id])
 
@@ -409,6 +457,7 @@ class UsersController < ApplicationController
         end
     end
 
+    #Deleting draft.
     def delete_draft
       article = Article.find_by(id: params[:id])
 
@@ -431,6 +480,7 @@ class UsersController < ApplicationController
       end
   end
 
+    #showing all the drafts for a logged - in user
     def my_drafts
       # Retrieve all draft articles of the current user
       articles = Article.where(author_id: current_user.author_id, is_draft: true)
@@ -456,10 +506,12 @@ class UsersController < ApplicationController
       render json: response
     end
 
+    #updating revision history for a article
     def update_revision_history(article, revision_text)
       article.update(revision_history: "#{article.revision_history}#{revision_text}")
     end
 
+    #retreiving article which are saved for later for a logged in user
     def saved_articles
       user = current_user
 
@@ -487,6 +539,7 @@ class UsersController < ApplicationController
       render json: response
     end
 
+    #save a article for later for a logged in user
     def save_article_for_later
       user = current_user
       article = Article.find(params[:article_id])

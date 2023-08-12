@@ -30,6 +30,10 @@ Rails.application.routes.draw do
   # User Login
   post '/login', to: 'sessions#create'
 
+  put '/update_user', to: 'users#update_user'
+
+  delete "/delete_user" , to: "users#delete_user"
+
   # Profile
   get '/profile', to: 'users#profile'
 
