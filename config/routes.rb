@@ -27,17 +27,15 @@ Rails.application.routes.draw do
 
   resources :users, only: [:create]
 
-  # User Login
+  # User routes
   post '/login', to: 'sessions#create'
 
   put '/update_user', to: 'users#update_user'
 
   delete "/delete_user" , to: "users#delete_user"
 
-  # Profile
   get '/profile', to: 'users#profile'
 
-  # My Posts
   get '/my_posts', to: 'users#my_posts'
 
   put '/follow_user', to: 'users#follow_user'
@@ -54,12 +52,14 @@ Rails.application.routes.draw do
 
   get '/similar_author_posts', to: "users#similar_author_posts"
 
-  put '/subscribe', to: "users#subscribe"
+  put '/subscribe_without_payment' , to: "users#subscribe_without_payment"
 
   put "/show", to: "users#show"
 
-  #Drafts
+  #revision history
+  get "/show_revision_history" , to: "users#show_revision_history"
 
+  #Drafts
   post "/create_draft" , to: "users#create_draft"
 
   put "/update_draft" , to: "users#update_draft"
@@ -73,10 +73,19 @@ Rails.application.routes.draw do
 
   post '/save_article_for_later', to: 'users#save_article_for_later'
 
+  #lists
   post '/create_article_in_list', to: 'users#create_article_in_list'
 
   get '/view_list', to: 'users#view_list'
 
   get '/share_list', to: 'users#share_list'
+
+  #payment routes
+
+  post '/subscribe', to: "payments#subscribe"
+
+  post '/payment_callback', to: "payments#payment_callback"
+
+  get '/payments_page', to: "payments#payments_page"
 
 end

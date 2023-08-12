@@ -65,6 +65,18 @@ class UsersController < ApplicationController
         render json: current_user, status: :ok
     end
 
+    def show_revision_history
+      articles = Article.find_by(id: params[:article_id])
+
+      response = articles.map do |article|
+        {
+          revision_history: article.revision_history,
+          id: article.id
+        }
+      end
+      render json: response, status: :ok
+    end
+
     #Posts By a Particlar Author
     def my_posts
       author = current_user.author
@@ -275,7 +287,8 @@ class UsersController < ApplicationController
       render json: response
     end
 
-    def subscribe
+    #dummy function to give subscription to a user without going through payment model, payment model + subscription is present in payments controller
+    def subscribe_without_payment
       subscription_plan = params[:subscription_plan]
       case subscription_plan
       when 'free'

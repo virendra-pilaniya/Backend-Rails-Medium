@@ -9,6 +9,7 @@ class ArticlesController < ApplicationController
 
    author = Author.find_by(id: current_user.author_id)
 
+   # I am assuming it will take 225 words pr minute
    words_per_minute = 225.0
    word_count = permitted_params[:description].split.size
    reading_time = (word_count.to_f / words_per_minute)

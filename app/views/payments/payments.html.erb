@@ -1,0 +1,19 @@
+<button id="rzp-button">Pay with Razorpay</button>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    key: "rzp_test_Y0GEFOcP1VvbJb",
+    amount: <%= @amount %>,  // Amount in paise
+    currency: "INR",
+    name: "Virendra Pilaniya",
+    description: "Subscription Payment",
+    order_id: "<%= @order_id %>",
+    callback_url: "http://127.0.0.1:3000/payment_callback"
+};
+
+var rzp = new Razorpay(options);
+document.getElementById('rzp-button').onclick = function(e){
+    rzp.open();
+    e.preventDefault();
+}
+</script>
