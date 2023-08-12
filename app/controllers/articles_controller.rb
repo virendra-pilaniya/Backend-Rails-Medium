@@ -1,17 +1,18 @@
 class ArticlesController < ApplicationController
 
+  before_action :authenticate_user, only: [:create, :update, :delete]
+
+  #creating article
   def create
-    # Permit only the specific fields from the request parameters
+    # Permiting only the specific fields
    permitted_params = article_params
 
-   # Find or create the author based on the author name
-   author = Author.find_or_create_by(name: permitted_params[:author])
+   author = Author.find_by(id: current_user.author_id)
 
-   words_per_minute = 225
+   words_per_minute = 225.0
    word_count = permitted_params[:description].split.size
-   reading_time = (word_count.to_f / words_per_minute).ceil
+   reading_time = (word_count.to_f / words_per_minute)
 
-   # Create the article and associate it with the author
    article = Article.new(
        title: permitted_params[:title],
        description: permitted_params[:description],
@@ -26,14 +27,12 @@ class ArticlesController < ApplicationController
        revision_history: "Created article with title #{permitted_params[:title]}, Initial version created at #{Time.now}\n"
    )
 
-   # Attach the 'image' file to the article if present
    article.image.attach(permitted_params[:image]) if permitted_params[:image].present?
 
    if article.save
-       # Update the article_ids of the associated author with the new article's ID
+
        author.update(article_ids: author.article_ids << article.id)
 
-       # Build a JSON response with the image URL for the created article
        response = {
        id: article.id,
        title: article.title,
@@ -58,20 +57,25 @@ class ArticlesController < ApplicationController
    end
 end
 
+#updating article
 def update
    article = Article.find_by(id: params[:id])
+
+   if article.author.id != current_user.author_id
+    render json: { error: 'This aint your article' }, status: :not_found
+    return
+   end
 
    unless article
      render json: { error: 'Article not found' }, status: :not_found
      return
    end
 
-   # Permit only the specific fields from the request parameters
+
    permitted_params = article_params.except(:author)
 
-   # Update the article with the permitted parameters
    if article.update(permitted_params)
-       # Build a JSON response with the updated article details
+
        update_revision_history(article, "Article with title #{article.title} and Id: #{article.id} Updated at #{Time.now}\n")
 
        response = {
@@ -97,21 +101,24 @@ def update
    end
 end
 
-
-def delete
+   #deleting article
+   def delete
    article = Article.find_by(id: params[:id])
 
+   if article.author.id != current_user.author_id
+    render json: { error: 'This aint your article' }, status: :not_found
+    return
+   end
+
    if article
-     # Get the associated author of the article
+
      author = article.author
 
-     # Destroy the associated image along with the article
      article.image.purge if article.image.attached?
 
-     # Destroy the article
      article.destroy
 
-     # Remove the article's ID from the author's article_ids array
+     # Removing the article's id from the author's article_ids array
      author.update(article_ids: author.article_ids - [params[:id].to_i])
 
      render json: { message: 'Article deleted successfully!' }, status: :ok
@@ -119,30 +126,31 @@ def delete
      render json: { error: 'Article not found' }, status: :not_found
    end
 end
+      #showing all the articles
+      def all
+        articles = Article.includes(image_attachment: :blob)
+        response = articles.map do |article|
+          {
+            id: article.id,
+            title: article.title,
+            author: article.author,
+            description: article.description,
+            genre: article.genre,
+            image_url: article.image.attached? ? url_for(article.image) : nil,
+            created_at: article.created_at,
+            updated_at: article.updated_at,
+            no_of_likes: article.no_of_likes,
+            no_of_comments: article.no_of_comments,
+            likes: article.likes,
+            comments: article.comments,
+            reading_time: article.reading_t,
+            revision_history: article.revision_history
+          }
+        end
+        render json: response
+      end
 
-def all
- articles = Article.includes(image_attachment: :blob)
- response = articles.map do |article|
-     {
-       id: article.id,
-       title: article.title,
-       author: article.author,
-       description: article.description,
-       genre: article.genre,
-       image_url: article.image.attached? ? url_for(article.image) : nil,
-       created_at: article.created_at,
-       updated_at: article.updated_at,
-       no_of_likes: article.no_of_likes,
-       no_of_comments: article.no_of_comments,
-       likes: article.likes,
-       comments: article.comments,
-       reading_time: article.reading_t,
-       revision_history: article.revision_history
-     }
- end
- render json: response
-end
-
+    #filtering the articles
     def filter
       author_name = params.fetch(:author, "")
       title = params.fetch(:title, "")
@@ -154,10 +162,8 @@ end
       articles = Article.all
 
       if author_name.present?
-        # Find the author by name (case-insensitive search)
         author = Author.find_by("lower(name) = ?", author_name.downcase)
 
-        # If the author exists, filter articles by the author's ID
         articles = articles.where(author: author) if author
       end
 
@@ -181,12 +187,11 @@ end
         articles = articles.where("no_of_comments <= ?", max_comments)
       end
 
-      # Build a JSON response with image URLs
       response = articles.map do |article|
         {
           id: article.id,
           title: article.title,
-          author: article.author.name, # Use the author's name instead of the entire author object
+          author: article.author.name,
           description: article.description,
           genre: article.genre,
           image_url: article.image.attached? ? url_for(article.image) : nil,
@@ -204,7 +209,7 @@ end
       render json: response
     end
 
-
+    #searching for articles
     def search
       title = article_search_params[:title].presence
       description = article_search_params[:description].presence
@@ -218,19 +223,16 @@ end
       articles = articles.where("lower(genre) LIKE ?", "%#{genre.downcase}%") if genre
 
       if author_name.present?
-        # Find the author by name (case-insensitive search)
         author = Author.find_by("lower(name) = ?", author_name.downcase)
 
-        # If the author exists, filter articles by the author's ID
         articles = articles.where(author_id: author.id) if author
       end
 
-      # Build a JSON response with image URLs
       response = articles.map do |article|
         {
           id: article.id,
           title: article.title,
-          author: article.author.name, # Assuming 'author' is an association in the Article model
+          author: article.author.name,
           description: article.description,
           genre: article.genre,
           image_url: article.image.attached? ? url_for(article.image) : nil,
@@ -248,6 +250,7 @@ end
       render json: response
     end
 
+    #Home page, with pagination
     def home
       bpp=params.fetch(:books_per_page, 3).to_i
       offset=params.fetch(:page, 0).to_i
@@ -278,7 +281,7 @@ end
       end
 
       articles = Article.includes(image_attachment: :blob).offset((offset-1)*bpp).limit(bpp)
-      # render json: @articles.offset((@offset-1)*@bpp).limit(@bpp)
+
       response = articles.map do |article|
           {
             id: article.id,
@@ -298,15 +301,15 @@ end
           }
       end
       render json: response
-  end
+    end
 
+    #sorting the articles
     def sort
         ordr = params.fetch(:order, :asc)
 
-        # Perform the sorting based on 'created_at' in ascending or descending order
+        # Performing the sorting based on 'created_at' in ascending or descending order
         articles = Article.order(created_at: ordr)
 
-        # Build a JSON response with image URLs
         response = articles.map do |article|
           {
             id: article.id,
@@ -329,6 +332,7 @@ end
         render json: response
     end
 
+    #showing top posts, first on the basis of first likes and then comments.
     def top_posts
       all_articles = Article.all
 
@@ -365,12 +369,10 @@ end
     private
 
     def article_params
-        # Permit only the specific fields from the request parameters
-        params.permit(:title, :author, :description, :genre, :image)
+        params.permit(:title, :description, :genre, :image)
     end
 
     def article_search_params
-        # Permit only the 'description' field from the request parameters
         params.permit(:title, :author, :description, :genre)
     end
 end

@@ -98,13 +98,6 @@ class UsersController < ApplicationController
       render json: response, status: :ok
     end
 
-    # Follow a Particular User
-    # def follow_user
-    #   current_user.following << params[:id]
-    #   current_user.save
-    #   render json: current_user.following
-    # end
-
     #Follow user
     def follow_user
       target_user = User.find_by(id: params[:id])
@@ -369,7 +362,7 @@ class UsersController < ApplicationController
 
     #creating a draft.
     def create_draft
-      permitted_params = article_param # Mark the article as a draft
+      permitted_params = article_param
 
       author = Author.find_or_create_by(name: permitted_params[:author])
 
@@ -388,10 +381,10 @@ class UsersController < ApplicationController
       article.image.attach(permitted_params[:image]) if permitted_params[:image].present?
 
         if article.save
-            # Update the article_ids of the associated author with the new article's ID
+
             author.update(article_ids: author.article_ids << article.id)
             update_revision_history(article, "Draft created at #{Time.now}\n")
-            # Build a JSON response with the image URL for the created article
+
             response = {
             id: article.id,
             title: article.title,
@@ -423,7 +416,7 @@ class UsersController < ApplicationController
         return
       end
 
-      # Ensure the article belongs to the current user and is a draft
+      # Ensuring the article belongs to the current user and is a draft
       if article.author_id != current_user.author_id || !article.is_draft
         render json: { error: 'You do not have permission to update this draft' }, status: :unauthorized
         return
@@ -431,11 +424,10 @@ class UsersController < ApplicationController
 
       permitted_params = article_param.except(:author)
 
-        # Update the article with the permitted parameters
         if article.update(permitted_params)
 
             update_revision_history(article, "Draft updated at #{Time.now}\n")
-            # Build a JSON response with the updated article details
+
             response = {
             id: article.id,
             title: article.title,
@@ -462,7 +454,6 @@ class UsersController < ApplicationController
       article = Article.find_by(id: params[:id])
 
       if article
-        # Get the associated author of the article
         author = article.author
 
         # Destroy the associated image along with the article
@@ -471,7 +462,7 @@ class UsersController < ApplicationController
         # Destroy the article
         article.destroy
 
-        # Remove the article's ID from the author's article_ids array
+        # Removig the article's ID from the author's article_ids array
         author.update(article_ids: author.article_ids - [params[:id].to_i])
 
         render json: { message: 'Draft deleted successfully!' }, status: :ok
@@ -486,7 +477,6 @@ class UsersController < ApplicationController
       articles = Article.where(author_id: current_user.author_id, is_draft: true)
 
       response = articles.map do |article|
-        # Generate a response object for each draft article
         {
           id: article.id,
           title: article.title,
@@ -550,11 +540,13 @@ class UsersController < ApplicationController
       render json: { message: 'Article saved for later' }
     end
 
+    #viewing the list made by the loggedin user.
     def view_list
       user = current_user
       render json: { list: user.list || [] }
     end
 
+    #creating list for a loggedin user, which compreises of article id and title
     def create_article_in_list
       user = current_user
 
@@ -570,6 +562,7 @@ class UsersController < ApplicationController
       end
     end
 
+    #sharing the list created by the user, whose id will be provided in params
     def share_list
       user = User.find_by(id: params[:user_id])
 
@@ -581,10 +574,6 @@ class UsersController < ApplicationController
     end
 
     private
-
-    # def author_params
-    #   params.permit(:name)
-    # end
 
     def user_params
       params.permit(:name, :email, :password, :password_confirmation, :interests, :specializations)
