@@ -1,6 +1,6 @@
 # app/controllers/users_controller.rb
 class UsersController < ApplicationController
-  before_action :authenticate_user, only: [:update_user, :delete_user, :create_article_in_list, :view_list, :save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe, :show, :create_draft, :update_draft, :my_drafts]
+  before_action :authenticate_user, only: [:update_user, :delete_user, :create_article_in_list, :view_list, :save_article_for_later, :saved_articles, :profile, :my_posts, :follow_user, :add_like, :add_comment, :recommended_posts, :similar_author_posts, :subscribe_without_payment, :show, :create_draft, :update_draft, :my_drafts]
 
   #Creating a new User
   def create
@@ -248,7 +248,7 @@ class UsersController < ApplicationController
     specializations_array = current_user.specializations.split(',')
     request_users = []
 
-    request_users - User.select do |user|
+    request_users = User.select do |user|
       if user.specializations.nil?
         false
       else
@@ -294,24 +294,24 @@ class UsersController < ApplicationController
   #dummy function to give subscription to a user without going through payment model, payment model + subscription is present in payments controller
   def subscribe_without_payment
     subscription_plan = params[:subscription_plan]
-    case subscription_plan
-    when 'free'
-      current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: Time.now + 1.month)
-    when '3_posts'
+      case subscription_plan
+      when 'free'
+        current_user.update(subscription_plan: 'free', remaining_posts: 1, expires_at: Time.now + 1.month)
+      when '3_posts'
 
-      current_user.update(subscription_plan: '3_posts', remaining_posts: 3, expires_at: Time.now + 1.month)
-    when '5_posts'
-      current_user.update(subscription_plan: '5_posts', remaining_posts: 5, expires_at: Time.now + 1.month)
-    when '10_posts'
-      current_user.update(subscription_plan: '10_posts', remaining_posts: 10, expires_at: Time.now + 1.month)
-    else
-      render json: { error: 'Invalid subscription plan' }, status: :unprocessable_entity
-      return
-    end
+        current_user.update(subscription_plan: '3_posts', remaining_posts: 3, expires_at: Time.now + 1.month)
+      when '5_posts'
+        current_user.update(subscription_plan: '5_posts', remaining_posts: 5, expires_at: Time.now + 1.month)
+      when '10_posts'
+        current_user.update(subscription_plan: '10_posts', remaining_posts: 10, expires_at: Time.now + 1.month)
+      else
+        render json: { error: 'Invalid subscription plan' }, status: :unprocessable_entity
+        return
+      end
 
-    render json: { message: 'Subscription successful' }, status: :ok
-  rescue StandardError => e
-    render json: { error: e.message }, status: :unprocessable_entity
+      render json: { message: 'Subscription successful' }, status: :ok
+    rescue StandardError => e
+      render json: { error: e.message }, status: :unprocessable_entity
   end
 
   def reset_remaining_posts
@@ -526,7 +526,7 @@ end
 
     response = saved_articles.map do |article|
       article = {
-        id: article.id
+        id: article.id,
         title: article.title,
         author: article.author.name,
         description: article.description,
